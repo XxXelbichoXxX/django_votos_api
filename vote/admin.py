@@ -1,6 +1,6 @@
 from django.contrib import admin
-from vote.models import Voto
+from vote.models import Vote
 
-@admin.register(Voto)
+@admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
     pass

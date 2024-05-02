@@ -1,6 +1,6 @@
 from django.contrib import admin
-from stage.models import Etapa
+from stage.models import Stage
 
-@admin.register(Etapa)
-class EtapaAdmin(admin.ModelAdmin):
+@admin.register(Stage)
+class StageAdmin(admin.ModelAdmin):
     pass

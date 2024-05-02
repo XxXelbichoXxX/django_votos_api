@@ -1,10 +1,10 @@
 from rest_framework.routers import DefaultRouter
-from stage.api.views import EtapaApiViewSet
+from stage.api.views import StageApiViewSet
 
-router_Etapa = DefaultRouter()
+stageRouter = DefaultRouter()
 
-router_Etapa.register(
-    prefix='etapa',
-    basename='etapa',
-    viewset=EtapaApiViewSet
+stageRouter.register(
+    prefix='stage',
+    basename='stage',
+    viewset=StageApiViewSet
 )

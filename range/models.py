@@ -1,5 +1,5 @@
 from django.db import models
 
-class Rango(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=128, unique=True)
+class Range(models.Model):
+    rangeId = models.AutoField(primary_key=True)
+    rangeName = models.CharField(max_length=128, unique=True)

@@ -1,8 +1,8 @@
 from rest_framework.serializers import ModelSerializer
-from range.models import Rango
+from range.models import Range
 
 
-class RangoSerializer(ModelSerializer):
+class RangeSerializer(ModelSerializer):
     class Meta:
-        model = Rango
-        fields = ['id', 'name']
+        model = Range
+        fields = ['rangeId', 'rangeName']

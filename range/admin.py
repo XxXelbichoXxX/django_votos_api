@@ -1,6 +1,6 @@
 from django.contrib import admin
-from range.models import Rango
+from range.models import Range
 
-@admin.register(Rango)
-class RangoAdmin(admin.ModelAdmin):
+@admin.register(Range)
+class RangeAdmin(admin.ModelAdmin):
     pass

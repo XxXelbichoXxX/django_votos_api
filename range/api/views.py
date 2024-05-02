@@ -1,10 +1,10 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from range.models import Rango
-from range.api.serializers import RangoSerializer
+from range.models import Range
+from range.api.serializers import RangeSerializer
 
 
-class RangoApiViewSet(ModelViewSet):
+class RangeApiViewSet(ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
-    queryset = Rango.objects.all()
-    serializer_class = RangoSerializer
+    queryset = Range.objects.all()
+    serializer_class = RangeSerializer

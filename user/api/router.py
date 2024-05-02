@@ -4,11 +4,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from user.api.views import UserApiViewSet, UserView
 
-router_user = DefaultRouter()
+userRouter = DefaultRouter()
 
-router_user.register(
-    prefix='users', 
-    basename='users',
+userRouter.register(
+    prefix='user', 
+    basename='user',
     viewset=UserApiViewSet
 )
 

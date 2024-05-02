@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'range',
     'stage',
     'vote',
+    'dependency',
 ]
 
 MIDDLEWARE = [
@@ -151,12 +152,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # USERS
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'user.User'
 # nota: (users) se refiere a la aplicacion y (User) se refiere al modelo
 CORS_ORIGIN_ALLOW_ALL = True
 CARS_ALLOW_CREDENTIALS = True
 
 #es para decir cual sera el tiempo de vida del acces token que se va a crear cuando se autentique
-SIMPLE_JWT = {
+""" SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=120),
-} 
+}  """

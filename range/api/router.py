@@ -1,10 +1,10 @@
 from rest_framework.routers import DefaultRouter
-from range.api.views import RangoApiViewSet
+from range.api.views import RangeApiViewSet
 
-router_rango = DefaultRouter()
+rangeRouter = DefaultRouter()
 
-router_rango.register(
-    prefix='rango',
-    basename='rango',
-    viewset=RangoApiViewSet
+rangeRouter.register(
+    prefix='range',
+    basename='range',
+    viewset=RangeApiViewSet
 )

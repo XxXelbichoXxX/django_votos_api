@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class EtapaConfig(AppConfig):
+class StageConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'etapa'
+    name = 'stage'

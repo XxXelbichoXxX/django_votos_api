@@ -32,21 +32,10 @@ class UserApiViewSet(ModelViewSet):
         return super().partial_update(request, *args, **kwargs)
     
     
-    #EJEMPLO DE COMO CREAR TU PROPIA SOLICITUD HTTP PERSONALISADA    
-    @action(detail=False, methods=['get'])
-    def custom_greeting(self, request):
-        try:
-            # Tu lógica aquí
-            data = {"message": "¡Hola! Bienvenido a mi API."}
-            return Response(data, status=status.HTTP_200_OK)
-        except Exception as e:
-            # Maneja la excepción de manera específica o general
-            data = {"error": f"Error inesperado: {str(e)}"}
-            return Response(data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     #INSERTAMOS UN METODO PARA CREAR VARIOS REGISTROS A LA VEZ 
     @action(detail=False, methods=['POST'])
-    def create_usersM(self, request, *args, **kwargs):
+    def createMassiveUsers(self, request, *args, **kwargs):
         """
         Crea Usuarios de forma masiva.
 
