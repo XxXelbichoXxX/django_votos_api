@@ -239,7 +239,7 @@ class VoteApiViewSet(ModelViewSet):
     # Acción para verificar la existencia de registros con la fk, la etapa y el año proporcionados
     @swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter('id_emp_votante_fk', openapi.IN_QUERY, description="Número de empleado del votante", type=openapi.TYPE_STRING),
+            openapi.Parameter('empVoterIdFK', openapi.IN_QUERY, description="Número de empleado del votante", type=openapi.TYPE_STRING),
             openapi.Parameter('stageIdFK', openapi.IN_QUERY, description="Número de etapa", type=openapi.TYPE_STRING),
             openapi.Parameter('voteDate', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING, format='date'),
         ],
@@ -251,7 +251,7 @@ class VoteApiViewSet(ModelViewSet):
         Verifica la existencia de un voto basado en el número de empleado del votante, el número de etapa y el año de voto.
 
         # Parámetros:
-        - id_emp_votante_fk: Número de empleado del votante.
+        - empVoterIdFK  : Número de empleado del votante.
         - stageIdFK: Número de etapa.
         - voteDate: Año de voto.
 
