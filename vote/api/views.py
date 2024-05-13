@@ -98,7 +98,7 @@ class VoteApiViewSet(ModelViewSet):
                     'rangeIdFK', 
                     'empCandidateIdFK', 
                     workstation=F('empCandidateIdFK__workstation'),
-                    dependency=F('empCandidateIdFK__dependency'),
+                    dependency=F('empCandidateIdFK__dependencyId'),
                     username=F('empCandidateIdFK__username') 
                  ) 
             .annotate( 
@@ -165,7 +165,7 @@ class VoteApiViewSet(ModelViewSet):
                     'rangeIdFK', 
                     'empCandidateIdFK', 
                     workstation=F('empCandidateIdFK__workstation'),
-                    dependency=F('empCandidateIdFK__dependency'),
+                    dependency=F('empCandidateIdFK__dependencyId'),
                     username=F('empCandidateIdFK__username') 
                  ) 
             .annotate( 
