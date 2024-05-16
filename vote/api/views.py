@@ -54,7 +54,7 @@ class VoteApiViewSet(ModelViewSet):
         manual_parameters=[
             openapi.Parameter('stageIdFK', openapi.IN_QUERY, description="Número de etapa", type=openapi.TYPE_STRING),
             openapi.Parameter('rangeIdFK', openapi.IN_QUERY, description="Número de rango", type=openapi.TYPE_STRING),
-            openapi.Parameter('voteDate', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING, format='date'),
+            openapi.Parameter('period', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING),
         ],
         responses={200: VoteSerializer(many=True)},
     )
@@ -67,8 +67,7 @@ class VoteApiViewSet(ModelViewSet):
         # Parámetros:
         - stageIdFK: Número de etapa.
         - rangeIdFK: Número de rango.
-        - voteDate: Fecha de voto en formato de año.
-    
+
         # Retorna:
         - una lista de la cantidad de votos por electo con información detallada de mayor a menor.
         """
@@ -77,7 +76,7 @@ class VoteApiViewSet(ModelViewSet):
 
         stageIdFK = request.query_params.get('stageIdFK')
         rangeIdFK = request.query_params.get('rangeIdFK')
-        voteDate_str = request.query_params.get('voteDate')
+        period = request.query_params.get('period')  # Cambio de voteYear a voteDate
 
         filters = {'revocationStatus': False}
 
@@ -87,32 +86,31 @@ class VoteApiViewSet(ModelViewSet):
         if rangeIdFK:
             filters['rangeIdFK'] = rangeIdFK
 
-        if voteDate_str:
-            filters['voteDate__year'] = voteDate_str
+        if period:
+            filters['period'] = period
 
+      
         counts = (
             Vote.objects
             .filter(**filters)
             .values(
-                    'stageIdFK',
-                    'rangeIdFK', 
-                    'empCandidateIdFK', 
-                    workstation=F('empCandidateIdFK__workstation'),
-                    dependency=F('empCandidateIdFK__dependencyId'),
-                    username=F('empCandidateIdFK__username') 
-                 ) 
-            .annotate( 
-                    image=Concat( Value(base_url),'empCandidateIdFK__image',output_field=CharField() ), 
-                    full_name=Concat('empCandidateIdFK__first_name', Value(' '), 'empCandidateIdFK__last_name'),                 
-                    year=TruncYear('voteDate'), 
-                    total=Count('voteId')
-                )   
+                'stageIdFK',
+                'rangeIdFK', 
+                'empCandidateIdFK', 
+                workstation=F('empCandidateIdFK__workstation'),
+                dependency=F('empCandidateIdFK__dependencyIdFK'),
+                username=F('empCandidateIdFK__username')
+            )
+            .annotate(
+                image=Concat(Value(base_url), 'empCandidateIdFK__image', output_field=CharField()),
+                full_name=Concat('empCandidateIdFK__first_name', Value(' '), 'empCandidateIdFK__last_name'),
+                period=F('period'),
+                total=Count('voteId')
+            )
             .order_by('-total')
         )
 
         return Response(counts, status=status.HTTP_200_OK)
-        
-
 #-------------------------------------------------------------------------------------------------------------------
      # Peticion para obtener el total de votos por rango, etapa y fecha (fecha es el año)
     @swagger_auto_schema(
@@ -165,7 +163,7 @@ class VoteApiViewSet(ModelViewSet):
                     'rangeIdFK', 
                     'empCandidateIdFK', 
                     workstation=F('empCandidateIdFK__workstation'),
-                    dependency=F('empCandidateIdFK__dependencyId'),
+                    dependency=F('empCandidateIdFK__dependencyIdFK'),
                     username=F('empCandidateIdFK__username') 
                  ) 
             .annotate( 

@@ -9,9 +9,9 @@ def setRandId():
 class User(AbstractUser):
     id = models.CharField(max_length=30, primary_key=False, auto_created=True, null=True, blank=True)
     username = models.CharField(max_length=30, unique=True, primary_key=True)
-    dependencyId = models.ForeignKey('dependency.Dependency', on_delete=models.SET_NULL, null=True, blank=True)
+    dependencyIdFK = models.ForeignKey('dependency.Dependency', on_delete=models.SET_NULL, null=True, blank=True)
     workstation = models.CharField(max_length=100, null=True, blank=True)
-    rankIdFk = models.ForeignKey('range.Range', on_delete=models.SET_NULL, null=True, blank=True)
+    rangeIdFK = models.ForeignKey('range.Range', on_delete=models.SET_NULL, null=True, blank=True)
     antiquity = models.IntegerField(null=True, blank=True)
     isAdmin = models.BooleanField(default=False, null=True, blank=True)
     image = models.ImageField(upload_to='user', null=True, blank=True)

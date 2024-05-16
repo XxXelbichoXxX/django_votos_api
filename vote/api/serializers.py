@@ -5,7 +5,7 @@ from vote.models import Vote
 class VoteSerializer(ModelSerializer):
     class Meta:
         model = Vote
-        fields = ['voteId', 'empVoterIdFK', 'empCandidateIdFK', 'rangeIdFK', 'stageIdFK', 'voteDate', 'revocationStatus']
+        fields = ['voteId', 'empVoterIdFK', 'empCandidateIdFK', 'rangeIdFK', 'stageIdFK', 'voteDate', 'period', 'revocationStatus']
 
 
 class VoteListSerializer(ListSerializer):
