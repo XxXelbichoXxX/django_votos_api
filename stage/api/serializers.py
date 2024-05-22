@@ -5,4 +5,4 @@ from stage.models import Stage
 class StageSerializer(ModelSerializer):
     class Meta:
         model = Stage
-        fields = ['stageId', 'stageName', 'startDate', 'endDate']
+        fields = ['stageId','dependencyIdFK', 'stageName', 'startDate', 'endDate']

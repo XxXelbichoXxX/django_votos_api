@@ -1,5 +1,6 @@
 import random
 from django.db import models
+import os
 
 
 from django.contrib.auth.models import AbstractUser
@@ -19,6 +20,11 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = self.username+str(setRandId())
+        elif self.id:
+            if self.image:
+                old_image = User.objects.get(pk=self.pk)
+                if old_image.image and os.path.isfile(old_image.image.path):
+                    os.remove(old_image.image.path)
         super().save(*args, **kwargs)
 
 
