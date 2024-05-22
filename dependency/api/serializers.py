@@ -5,4 +5,4 @@ from dependency.models import Dependency
 class DependencySerializer(ModelSerializer):
     class Meta:
         model = Dependency
-        fields = ['dependencyId', 'dependencyName', 'owner', 'address', 'phone', 'logo']
+        fields = ['dependencyId', 'dependencyName', 'owner', 'address', 'phone', 'page', 'logo']
