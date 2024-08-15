@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'stage',
     'vote',
     'dependency',
+    'emails',
+    'forgetPasswordRequest',
 ]
 
 MIDDLEWARE = [
@@ -120,11 +122,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-""" REST_FRAMEWORK = {
+REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
-} """
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -159,6 +161,15 @@ CORS_ORIGIN_ALLOW_ALL = True
 CARS_ALLOW_CREDENTIALS = True
 
 #es para decir cual sera el tiempo de vida del acces token que se va a crear cuando se autentique
-""" SIMPLE_JWT = {
+SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=120),
-} """
+}
+
+#servidor de correo
+DEFAULT_FROM_EMAIL = 'elpifas173@gmail.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = DEFAULT_FROM_EMAIL 
+EMAIL_HOST_PASSWORD = 'fmab orbh gjag oqmd'

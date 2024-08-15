@@ -1,3 +1,4 @@
+from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from vote.models import Vote
@@ -6,7 +7,7 @@ from vote.api.serializers import VoteSerializer
 #Otras importaciones para las consultas
 from rest_framework.decorators import action
 from django.db import models
-from django.db.models import Count, F, Value, CharField, Func
+from django.db.models import Count, F, Value, CharField, Func, Min, Subquery, OuterRef
 from django.db.models.functions import Concat, TruncYear, TruncDate
 from rest_framework.response import Response
 from rest_framework import status
@@ -16,10 +17,13 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 
+
 class VoteApiViewSet(ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Vote.objects.all()
     serializer_class = VoteSerializer
+
+    
 
 #-------------------------------------------------------------------------------------------------------------------
     #Peticion para crear votos de forma masiva
@@ -49,34 +53,33 @@ class VoteApiViewSet(ModelViewSet):
 
 
 #-------------------------------------------------------------------------------------------------------------------
-    #Peticion para obtener el total de votos por rango , etapa y fecha (fecha es el año)
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter('stageIdFK', openapi.IN_QUERY, description="Número de etapa", type=openapi.TYPE_STRING),
             openapi.Parameter('rangeIdFK', openapi.IN_QUERY, description="Número de rango", type=openapi.TYPE_STRING),
-            openapi.Parameter('period', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING),
+            openapi.Parameter('period', openapi.IN_QUERY, description="Año del voto", type=openapi.TYPE_STRING),
         ],
         responses={200: VoteSerializer(many=True)},
     )
     @action(detail=False, methods=['GET'])
     def countVotes(self, request):
         """
-        Obtiene el total de votos por rango, etapa y fecha.
+        Obtiene el total de votos por rango, etapa y fecha, ordenados por total y la fecha del primer voto en caso de empate.
 
         ---
         # Parámetros:
         - stageIdFK: Número de etapa.
         - rangeIdFK: Número de rango.
+        - period: Año del voto.
 
         # Retorna:
-        - una lista de la cantidad de votos por electo con información detallada de mayor a menor.
+        - Una lista de la cantidad de votos por candidato con información detallada, ordenada por total y la fecha del primer voto en caso de empate.
         """
-        # Obtener la URL base para concatenarlo con la url de la imagen
-        base_url = request.build_absolute_uri('/uploads/')
+        base_url = request.build_absolute_uri('/uploads/')  # Obtener la URL base para concatenarlo con la URL de la imagen
 
         stageIdFK = request.query_params.get('stageIdFK')
         rangeIdFK = request.query_params.get('rangeIdFK')
-        period = request.query_params.get('period')  # Cambio de voteYear a voteDate
+        period = request.query_params.get('period')
 
         filters = {'revocationStatus': False}
 
@@ -89,35 +92,45 @@ class VoteApiViewSet(ModelViewSet):
         if period:
             filters['period'] = period
 
-      
+        # Subconsulta para obtener la fecha del primer voto más antiguo por candidato
+        first_vote_subquery = (
+            Vote.objects
+            .filter(empCandidateIdFK=OuterRef('empCandidateIdFK'))
+            .order_by('voteDate')  # Ordenar por fecha de voto en orden ascendente (más antiguo primero)
+            .values('voteDate')[:1]  # Obtener la fecha del primer voto
+        )
+
         counts = (
             Vote.objects
             .filter(**filters)
             .values(
-                'stageIdFK',
-                'rangeIdFK', 
                 'empCandidateIdFK', 
+                'stageIdFK',
+                'rangeIdFK',
                 workstation=F('empCandidateIdFK__workstation'),
                 dependency=F('empCandidateIdFK__dependencyIdFK'),
-                username=F('empCandidateIdFK__username')
+                username=F('empCandidateIdFK__username'),
+                email=F('empCandidateIdFK__email'),
             )
             .annotate(
                 image=Concat(Value(base_url), 'empCandidateIdFK__image', output_field=CharField()),
                 full_name=Concat('empCandidateIdFK__first_name', Value(' '), 'empCandidateIdFK__last_name'),
                 period=F('period'),
-                total=Count('voteId')
+                total=Count('voteId'),
+                first_vote_date=Subquery(first_vote_subquery)  # Obtener la fecha del primer voto más antiguo
             )
-            .order_by('-total')
+            .order_by('-total', 'first_vote_date')  # Ordenar por total descendente y la fecha del primer voto en caso de empate
         )
 
         return Response(counts, status=status.HTTP_200_OK)
+
 #-------------------------------------------------------------------------------------------------------------------
      # Peticion para obtener el total de votos por rango, etapa y fecha (fecha es el año)
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter('stageIdFK', openapi.IN_QUERY, description="Número de etapa", type=openapi.TYPE_STRING),
             openapi.Parameter('rangeIdFK', openapi.IN_QUERY, description="Número de rango", type=openapi.TYPE_STRING),
-            openapi.Parameter('voteDate', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING, format='date'),
+            openapi.Parameter('period', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING),
             openapi.Parameter('top', openapi.IN_QUERY, description="Número de registros a retornar", type=openapi.TYPE_INTEGER),
         ],
         responses={200: VoteSerializer(many=True)},
@@ -130,7 +143,7 @@ class VoteApiViewSet(ModelViewSet):
         # Parámetros:
         - stageIdFK: Número de etapa.
         - rangeIdFK: Número de rango.
-        - voteDate: Año de voto.
+        - period: Año del voto.
         - top: Número de registros a retornar (opcional).
 
         # Retorna:
@@ -141,7 +154,7 @@ class VoteApiViewSet(ModelViewSet):
 
         stageIdFK = request.query_params.get('stageIdFK')
         rangeIdFK = request.query_params.get('rangeIdFK')
-        voteDate_str = request.query_params.get('voteDate')
+        period = request.query_params.get('period')
         top_count = request.query_params.get('top')  # Obtener el parámetro "top"
 
         filters = {'revocationStatus': False}
@@ -152,8 +165,8 @@ class VoteApiViewSet(ModelViewSet):
         if rangeIdFK:
             filters['rangeIdFK'] = rangeIdFK
 
-        if voteDate_str:
-            filters['voteDate__year'] = voteDate_str
+        if period:
+            filters['period'] = period
 
         counts = (
             Vote.objects
@@ -164,15 +177,16 @@ class VoteApiViewSet(ModelViewSet):
                     'empCandidateIdFK', 
                     workstation=F('empCandidateIdFK__workstation'),
                     dependency=F('empCandidateIdFK__dependencyIdFK'),
-                    username=F('empCandidateIdFK__username') 
+                    username=F('empCandidateIdFK__username'),
+                    email=F('empCandidateIdFK__email'),
                  ) 
             .annotate( 
                     image=Concat( Value(base_url),'empCandidateIdFK__image',output_field=CharField() ), 
                     full_name=Concat('empCandidateIdFK__first_name', Value(' '), 'empCandidateIdFK__last_name'),                 
-                    year=TruncYear('voteDate'), 
+                    min_vote_date=Min('voteDate'),  # Obtener la fecha de voto más antigua
                     total=Count('voteId')
                 )   
-            .order_by('-total')[:int(top_count)] if top_count else None  # Aplicar el recuento superior si se proporciona
+            .order_by('-total', 'min_vote_date')[:int(top_count)] if top_count else None  # Aplicar el recuento superior si se proporciona
         )
 
         return Response(counts, status=status.HTTP_200_OK)
@@ -226,7 +240,8 @@ class VoteApiViewSet(ModelViewSet):
                 'rangeIdFK',
                 'empCandidateIdFK',
                 nombre_candidato=Concat('empCandidateIdFK__first_name' , Value(' '), 'empCandidateIdFK__last_name'),
-                voteDate_trunc=TruncDate('voteDate'),                                
+                voteDate_trunc=TruncDate('voteDate'),     
+                email=F('empCandidateIdFK__email'),                           
             )
         )
         
@@ -271,7 +286,7 @@ class VoteApiViewSet(ModelViewSet):
 #-------------------------------------------------------------------------------------------------------------------
     @swagger_auto_schema(
         manual_parameters=[
-            openapi.Parameter('empCandidateIdFK', openapi.IN_QUERY, description="ID del candidato a actualizar", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('empCandidateIdFK', openapi.IN_QUERY, description="Número de empleado del votante", type=openapi.TYPE_STRING),
         ],
         responses={
             status.HTTP_200_OK: openapi.Response("Se actualizaron registros", example={'message': 'Se actualizaron registros.'}),
@@ -279,7 +294,7 @@ class VoteApiViewSet(ModelViewSet):
             status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response("Error interno del servidor", example={'error': 'Mensaje de error.'}),
         },
     )
-    @action(detail=False, methods=['GET'])
+    @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
     def updateRevocationStatus(self, request):
         """
         Actualiza el campo estatus_revocacion a True para los registros específicos de votos.
@@ -287,7 +302,7 @@ class VoteApiViewSet(ModelViewSet):
         Actualiza el campo estatus_revocacion a True para los registros específicos de un candidato para ya no contabilizarlos en caso de una revocatoría.
         
         # Parámetros:
-        - empCandidateIdFK (int): ID del candidato a actualizar.
+        - empCandidateIdFK (str): username del candidato a actualizar.
 
         # Retorna:
         - 200 OK: Se actualizaron registros. Ejemplo: {'message': 'Se actualizaron registros.'}
@@ -317,3 +332,84 @@ class VoteApiViewSet(ModelViewSet):
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @swagger_auto_schema(
+    manual_parameters=[
+        openapi.Parameter('period', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING),
+    ],
+    responses={200: VoteSerializer(many=True)},
+    )
+    @action(detail=False, methods=['GET'])
+    def countVotesByPeriod(self, request):
+        """
+        Obtiene todos los usuarios que han votado en un periodo.
+
+        ---
+        # Parámetros:
+        - period: periodo.
+        # Retorna:
+        - el total de usuarios que han votado en un periodo.
+        """
+        period = request.query_params.get('period')
+
+        filters = {}
+
+        if period:
+            filters['period'] = period
+
+            
+        total_users = (
+        Vote.objects
+        .filter(**filters)
+        .values('empVoterIdFK')
+        .distinct()
+        .count()
+        )
+        
+        return Response(total_users, status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(
+    manual_parameters=[
+        openapi.Parameter('stageIdFK', openapi.IN_QUERY, description="Número de etapa", type=openapi.TYPE_STRING),
+        openapi.Parameter('rangeIdFK', openapi.IN_QUERY, description="Número de rango", type=openapi.TYPE_STRING),
+        openapi.Parameter('period', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING),
+    ],
+    responses={200: VoteSerializer(many=True)},
+    )
+    @action(detail=False, methods=['GET'])
+    def countVotesByFilters(self, request):
+        """
+        Obtiene todos los usuarios que han votado en un periodo.
+
+        ---
+        # Parámetros:
+        - period: periodo.
+        # Retorna:
+        - el total de usuarios que han votado en un periodo.
+        """
+
+        stageIdFK = request.query_params.get('stageIdFK')
+        rangeIdFK = request.query_params.get('rangeIdFK')
+        period = request.query_params.get('period')
+
+        filters = {}
+
+        if stageIdFK:
+            filters['stageIdFK'] = stageIdFK
+        if rangeIdFK:
+            filters['rangeIdFK'] = rangeIdFK
+        if period:
+            filters['period'] = period
+
+            
+        total_users = (
+        Vote.objects
+        .filter(**filters)
+        .values('empVoterIdFK')
+        .distinct()
+        .count()
+        )
+        
+        return Response(total_users, status=status.HTTP_200_OK)
+        
+    

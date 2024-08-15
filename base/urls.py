@@ -15,6 +15,8 @@ from range.api.router import rangeRouter
 from stage.api.router import stageRouter
 from vote.api.router import voteRouter
 from dependency.api.router import dependencyRouter
+from forgetPasswordRequest.api.router import forgetPasswordRequestRouter
+from emails.api.views import EmailsApiView
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -41,6 +43,9 @@ urlpatterns = [
     path('api/', include(stageRouter.urls)),
     path('api/', include(voteRouter.urls)),
     path('api/', include(dependencyRouter.urls)),
+    path('api/', include(forgetPasswordRequestRouter.urls)),
+    path('api/emails/', EmailsApiView.as_view(), name='emails'),
+
 ]
 
 #rutas para imagenes
