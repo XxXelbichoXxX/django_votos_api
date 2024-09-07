@@ -97,12 +97,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'VOTOS_COMITE',
         'USER': 'postgres',
-        'PASSWORD': '2102',
+        'PASSWORD': '2024',
         'HOST': 'localhost',
         'PORT': '5432',
     }
-} """
-
+}
+ """
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -122,11 +122,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-REST_FRAMEWORK = {
+""" REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
-}
+} """
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -161,10 +161,9 @@ CORS_ORIGIN_ALLOW_ALL = True
 CARS_ALLOW_CREDENTIALS = True
 
 #es para decir cual sera el tiempo de vida del acces token que se va a crear cuando se autentique
-SIMPLE_JWT = {
+""" SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=120),
-}
-
+} """
 #servidor de correo
 DEFAULT_FROM_EMAIL = 'elpifas173@gmail.com'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

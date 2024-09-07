@@ -127,14 +127,14 @@ class VoteApiViewSet(ModelViewSet):
 #-------------------------------------------------------------------------------------------------------------------
      # Peticion para obtener el total de votos por rango, etapa y fecha (fecha es el año)
     @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter('stageIdFK', openapi.IN_QUERY, description="Número de etapa", type=openapi.TYPE_STRING),
-            openapi.Parameter('rangeIdFK', openapi.IN_QUERY, description="Número de rango", type=openapi.TYPE_STRING),
-            openapi.Parameter('period', openapi.IN_QUERY, description="Año voto", type=openapi.TYPE_STRING),
-            openapi.Parameter('top', openapi.IN_QUERY, description="Número de registros a retornar", type=openapi.TYPE_INTEGER),
-        ],
-        responses={200: VoteSerializer(many=True)},
-    )
+    manual_parameters=[
+        openapi.Parameter('stageIdFK', openapi.IN_QUERY, description="Número de etapa", type=openapi.TYPE_STRING),
+        openapi.Parameter('rangeIdFK', openapi.IN_QUERY, description="Número de rango", type=openapi.TYPE_STRING),
+        openapi.Parameter('period', openapi.IN_QUERY, description="Año del voto", type=openapi.TYPE_STRING),
+        openapi.Parameter('top', openapi.IN_QUERY, description="Número de registros a retornar (opcional)", type=openapi.TYPE_INTEGER),
+    ],
+    responses={200: VoteSerializer(many=True)},
+)
     @action(detail=False, methods=['GET'])
     def countTopVotes(self, request):
         """
@@ -147,16 +147,18 @@ class VoteApiViewSet(ModelViewSet):
         - top: Número de registros a retornar (opcional).
 
         # Retorna:
-        - Lista de votos con información detallada, ordenada por el total de votos de mayor a menor.
+        - Lista de votos con información detallada, ordenada por el total de votos de mayor a menor y la fecha del primer voto en caso de empate.
         """
-        # Obtener la URL base para concatenarlo con la url de la imagen
+        # Obtener la URL base para concatenarla con la URL de la imagen
         base_url = request.build_absolute_uri('/uploads/')
 
+        # Obtener parámetros de consulta
         stageIdFK = request.query_params.get('stageIdFK')
         rangeIdFK = request.query_params.get('rangeIdFK')
         period = request.query_params.get('period')
-        top_count = request.query_params.get('top')  # Obtener el parámetro "top"
+        top_count = request.query_params.get('top')
 
+        # Definir filtros
         filters = {'revocationStatus': False}
 
         if stageIdFK:
@@ -168,26 +170,46 @@ class VoteApiViewSet(ModelViewSet):
         if period:
             filters['period'] = period
 
-        counts = (
+        # Subconsulta para obtener la fecha del primer voto más antiguo por candidato
+        first_vote_subquery = (
+            Vote.objects
+            .filter(empCandidateIdFK=OuterRef('empCandidateIdFK'))
+            .order_by('voteDate')  # Ordenar por fecha de voto en orden ascendente (más antiguo primero)
+            .values('voteDate')[:1]  # Obtener la fecha del primer voto
+        )
+
+        # Definir la consulta con filtros, anotaciones y ordenación
+        query = (
             Vote.objects
             .filter(**filters)
             .values(
-                    'stageIdFK',
-                    'rangeIdFK', 
-                    'empCandidateIdFK', 
-                    workstation=F('empCandidateIdFK__workstation'),
-                    dependency=F('empCandidateIdFK__dependencyIdFK'),
-                    username=F('empCandidateIdFK__username'),
-                    email=F('empCandidateIdFK__email'),
-                 ) 
-            .annotate( 
-                    image=Concat( Value(base_url),'empCandidateIdFK__image',output_field=CharField() ), 
-                    full_name=Concat('empCandidateIdFK__first_name', Value(' '), 'empCandidateIdFK__last_name'),                 
-                    min_vote_date=Min('voteDate'),  # Obtener la fecha de voto más antigua
-                    total=Count('voteId')
-                )   
-            .order_by('-total', 'min_vote_date')[:int(top_count)] if top_count else None  # Aplicar el recuento superior si se proporciona
+                'stageIdFK',
+                'rangeIdFK',
+                'empCandidateIdFK',
+                workstation=F('empCandidateIdFK__workstation'),
+                dependency=F('empCandidateIdFK__dependencyIdFK'),
+                username=F('empCandidateIdFK__username'),
+                email=F('empCandidateIdFK__email'),
+            )
+            .annotate(
+                image=Concat(Value(base_url), 'empCandidateIdFK__image', output_field=CharField()),
+                full_name=Concat('empCandidateIdFK__first_name', Value(' '), 'empCandidateIdFK__last_name'),
+                min_vote_date=Min('voteDate'),  # Obtener la fecha de voto más antigua
+                total=Count('voteId'),
+                first_vote_date=Subquery(first_vote_subquery)  # Obtener la fecha del primer voto más antiguo
+            )
+            .order_by('-total', 'first_vote_date')  # Ordenar por total descendente y la fecha del primer voto en caso de empate
         )
+
+        # Aplicar el límite superior si se proporciona
+        if top_count:
+            try:
+                top_count = int(top_count)
+                query = query[:top_count]
+            except ValueError:
+                return Response({'error': 'El parámetro "top" debe ser un número entero válido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        counts = query
 
         return Response(counts, status=status.HTTP_200_OK)
 
